@@ -1,0 +1,90 @@
+module OldLexer where
+
+import Data.Maybe (fromMaybe)
+import GHC.Arr
+import Text.Regex.TDFA
+import Basetypes
+
+  --  IdentifierToken String TokenContext
+  --  ReservedToken ReservedTokenType TokenContext
+  --  StringToken String TokenContext
+  --  NumberToken Float TokenContext
+  -- WHITESPACE -> "^( |\r|\t)"
+  -- NEWLINE -> "^\n"
+  -- STRING -> "^\"[^\"]*\""
+  -- NUMBER -> "^[0-9]+(.[0-9]+)?"
+  -- IDENTIFIER -> "^[a-z0-9]+"
+reservedTokenToRegex :: ReservedTokenType -> String
+reservedTokenToRegex enum = case enum of
+  AND -> "^and"
+  CLASS -> "^class"
+  ELSE -> "^else"
+  FALSE -> "^false"
+  FUN -> "^fun"
+  FOR -> "^for"
+  IF -> "^if"
+  NIL -> "^nil"
+  OR -> "^or"
+  PRINT -> "^print"
+  RETURN -> "^return"
+  SUPER -> "^super"
+  THIS -> "^this"
+  TRUE -> "^true"
+  VAR -> "^var"
+  WHILE -> "^while"
+  BANG_EQUAL -> "^!="
+  EQUAL_EQUAL -> "^=="
+  GREATER_EQUAL -> "^>="
+  LESS_EQUAL -> "^<="
+  LEFT_PAREN -> "^\\("
+  RIGHT_PAREN -> "^\\)"
+  LEFT_BRACE -> "^\\["
+  RIGHT_BRACE -> "^\\]"
+  COMMA -> "^,"
+  DOT -> "^\\."
+  MINUS -> "^-"
+  PLUS -> "^\\+"
+  SEMICOLON -> "^;"
+  SLASH -> "^/"
+  STAR -> "^\\*"
+  BANG -> "^!"
+  EQUAL -> "^="
+  GREATER -> "^>"
+  LESS -> "^<"
+
+-- TODO: Figure out what this is supposed to be
+rest :: String -> String
+rest [] = []
+rest [x] = []
+rest (x:xs) = x : rest xs
+
+-- reservedTokenBuilder :: ReservedTokenType -> String -> TokenContext -> Token
+-- reservedTokenBuilder NUMBER input (LexingContext line) = Token NUMBER (Number (read input)) line
+-- reservedTokenBuilder IDENTIFIER input (LexingContext line) = Token IDENTIFIER (Text input) line
+-- reservedTokenBuilder STRING input (LexingContext line) = Token STRING (Text (rest $ tail input)) line
+-- reservedTokenBuilder tokenType _ (LexingContext line) = Token tokenType Nil line
+
+updateContext :: Token -> TokenContext -> TokenContext
+updateContext t c = if tokenType t == NEWLINE then c + 1 else c
+
+-- Takes a string to be turned into a regex and a string to match against.
+-- Returns Nothing if there are no matches, and the match text plus the trailing string if there are matches
+extractMatch :: TokenType -> String -> TokenContext -> Maybe (Token, String)
+extractMatch tokenType s c =
+  (\(_, match_arr, rest) -> (tokenBuilder tokenType (fst (match_arr ! 0)) c, rest)) <$> matchOnceText re s
+  where
+    re = makeRegexOpts blankCompOpt ExecOption {captureGroups = False} (tokenToRegex tokenType)
+
+scanExtractors :: [TokenType] -> String -> TokenContext -> (Token, String)
+scanExtractors [] s c = (Token ERROR (Text ("Error: unknown token here: " ++ s)) (currentLineNum c), "")
+scanExtractors (x : xs) s c = fromMaybe (scanExtractors xs s c) (extractMatch x s c)
+
+-- Lexer? I 'ardly even know 'er
+lexer :: String -> TokenContext -> [Token]
+lexer "" c = [Token EOF c]
+lexer s c = fst result : lexer (snd result) (updateParsingContext (fst result) c)
+  where
+    result = scanExtractors [minBound :: TokenType .. maxBound :: TokenType] s c
+
+lexInput :: String -> [Token]
+lexInput s = lexer s 1
