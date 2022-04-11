@@ -37,30 +37,27 @@ data ReservedTokenType
   | TRUE
   | FALSE
   | WHITESPACE
-  | EOF
   deriving (Show, Enum, Eq, Ord, Bounded)
 
-type TokenContext = Int
-
 data Token
-  = IdentifierToken TokenContext String
-  | ReservedToken TokenContext ReservedTokenType
-  | StringToken TokenContext String
-  | NumberToken TokenContext Float 
+  = IdentifierToken String
+  | ReservedToken ReservedTokenType
+  | StringToken String
+  | NumberToken Float 
   deriving (Show, Eq)
 
 isReservedTokenOfType :: ReservedTokenType -> Token -> Bool
-isReservedTokenOfType tt (ReservedToken _ t) = t == tt
+isReservedTokenOfType tt (ReservedToken t) = t == tt
 isReservedTokenOfType _ _ = False
 
 isStringToken :: Token -> Bool
-isStringToken (StringToken _ _) = True
+isStringToken (StringToken _) = True
 isStringToken _ = False
 
 isIdToken :: Token -> Bool
-isIdToken (IdentifierToken _ _) = True
+isIdToken (IdentifierToken _) = True
 isIdToken _ = False
 
 isNumberToken :: Token -> Bool
-isNumberToken (NumberToken _ _) = True
+isNumberToken (NumberToken _) = True
 isNumberToken _ = False

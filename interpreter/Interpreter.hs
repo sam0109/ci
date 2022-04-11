@@ -1,6 +1,5 @@
 module Interpreter where
 
-import Parser
 import Token
 import State
 import Error

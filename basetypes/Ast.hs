@@ -6,7 +6,7 @@ import Token
 renderAst :: (Show i, Show a) => Either [Error i] (a, [i]) -> String
 renderAst x = case x of
   Left err -> show err
-  Right (ast, rest) -> show ast
+  Right (ast, _) -> show ast
 
 data Expr
   = Terminal Token
@@ -23,5 +23,7 @@ data Stmt
 data Decl
   = VarDecl (Maybe Expr) String
   | StmtDecl Stmt
+  deriving (Show)
 
 data Program = Program [Decl]
+  deriving (Show)

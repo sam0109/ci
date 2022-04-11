@@ -32,14 +32,14 @@ createVar :: State -> Var -> State
 createVar s v = State (io s) (v : vars s)
 
 findVar :: State -> String -> Maybe Var
-findVar (State _ []) str = Nothing
+findVar (State _ []) _ = Nothing
 findVar (State i (x : xs)) str =
   if identifier x == str
     then Just x
     else findVar (State i xs) str
 
 removeVar :: [Var] -> String -> [Var]
-removeVar [] s = []
+removeVar [] _ = []
 removeVar (x : xs) s =
   if identifier x == s
     then xs
@@ -51,6 +51,6 @@ setVar s v = case findVar s (identifier v) of
   Just _ -> State (io s) (v : removeVar (vars s) (identifier v))
 
 declVar :: State -> String -> Either [Error String] State
-declVar s id = case findVar s id of
-  Nothing -> Right $ State (io s) (Var id Nil : vars s)
-  Just _ -> Left [VariableAlreadyDeclared id]
+declVar s ident = case findVar s ident of
+  Nothing -> Right $ State (io s) (Var ident Nil : vars s)
+  Just _ -> Left [VariableAlreadyDeclared ident]

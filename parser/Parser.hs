@@ -2,18 +2,17 @@
 
 module Parser where
 
-import Control.Applicative (Alternative (empty, many, (<|>), some))
-import Control.Monad
+import Ast
+import Control.Applicative (Alternative (empty, (<|>), some))
+import Error
 import ParserBase
 import Token
-import Ast
-import Error
 
 stringFromIdToken :: Parser Token String
 stringFromIdToken = Parser $ \case
   [] -> Left [EndOfInput]
-  ((IdentifierToken _ s) : rest) -> Right (s, rest)
-  (x:xs) -> Left [Unexpected x]
+  ((IdentifierToken s) : rest) -> Right (s, rest)
+  (x : _) -> Left [Unexpected x]
 
 matchRes :: ReservedTokenType -> Parser Token Token
 matchRes tt = satisfy $ isReservedTokenOfType tt
@@ -22,19 +21,17 @@ matchRes' :: [ReservedTokenType] -> Parser Token Token
 matchRes' = foldr ((<|>) . matchRes) empty
 
 binaryOp :: [ReservedTokenType] -> Parser Token Expr -> Parser Token Expr
-binaryOp ts p =
-  do
-    l <- p
-    b <- Binary <$> matchRes' ts
-    r <- binaryOp ts p <|> p
-    return $ b l r
+binaryOp tt p = do
+    left <- p
+    op <- matchRes' tt
+    Binary op left <$> p
     <|> p
 
 unaryOp :: [ReservedTokenType] -> Parser Token Expr -> Parser Token Expr
-unaryOp ts p = (Unary <$> matchRes' ts <*> unaryOp ts p) <|> p
-
-groupingOp :: Parser Token Expr
-groupingOp = matchRes LEFT_PAREN *> (Grouping <$> expression) <* matchRes RIGHT_PAREN
+unaryOp tt p = do
+    op <- matchRes' tt
+    Unary op <$> p
+    <|> p
 
 -- expression -> equality;
 -- equality   -> (equality ( "!=" | "==" ) comparison) | comparison ;
@@ -45,25 +42,42 @@ groupingOp = matchRes LEFT_PAREN *> (Grouping <$> expression) <* matchRes RIGHT_
 -- primary    -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
 
 expression :: Parser Token Expr
-expression =
-  binaryOp [BANG_EQUAL, EQUAL_EQUAL] $ -- equality
-    binaryOp [LESS, LESS_EQUAL, GREATER, GREATER_EQUAL] $ -- comparison
-      binaryOp [MINUS, PLUS] $ -- term
-        binaryOp [SLASH, STAR] $ -- factor
-          unaryOp [MINUS, BANG] $ -- unary
-            Terminal <$> matchRes' [TRUE, FALSE, NIL] <|> groupingOp -- primary
-            -- NUMBER, STRING, 
+expression = equality
+
+equality :: Parser Token Expr
+equality = binaryOp [BANG_EQUAL, EQUAL_EQUAL] comparison
+
+comparison :: Parser Token Expr
+comparison = binaryOp [GREATER, GREATER_EQUAL, LESS, LESS_EQUAL] term
+
+term :: Parser Token Expr
+term = binaryOp [MINUS, PLUS] factor
+
+factor :: Parser Token Expr
+factor = binaryOp [SLASH, STAR] unary
+
+unary :: Parser Token Expr
+unary = unaryOp [BANG, MINUS] primary
+
+primary :: Parser Token Expr
+primary =
+  Terminal <$> (satisfy isNumberToken <|> satisfy isStringToken <|> matchRes' [TRUE, NIL])
+    <|> grouping
+
+grouping :: Parser Token Expr
+grouping = Grouping <$>  (matchRes LEFT_PAREN *> expression <* matchRes RIGHT_PAREN)
 
 statement :: Parser Token Stmt
 statement = (ExprStmt <$> expression <|> PrintStmt <$> matchRes PRINT <*> expression) <* matchRes SEMICOLON
 
 declaration :: Parser Token Decl
-declaration = StmtDecl <$> statement
-  <|> do
-    s <- matchRes VAR *> stringFromIdToken <* matchRes EQUAL
-    expr <- expression
-    return $ VarDecl (Just expr) s
-  <|> VarDecl Nothing <$> (matchRes VAR *> stringFromIdToken)
+declaration =
+  StmtDecl <$> statement
+    <|> do
+      s <- matchRes VAR *> stringFromIdToken <* matchRes EQUAL
+      expr <- expression
+      return $ VarDecl (Just expr) s
+    <|> VarDecl Nothing <$> (matchRes VAR *> stringFromIdToken)
 
 program :: Parser Token Program
-program = Program <$> many declaration <* matchRes EOF
+program = Program <$> some declaration

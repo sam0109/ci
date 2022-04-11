@@ -1,10 +1,11 @@
 {-# LANGUAGE LambdaCase #-}
+
 module ParserBase where
 
 import Control.Applicative
-import Error
 import Control.Monad
 import Data.List
+import Error
 
 newtype Parser i a = Parser
   { runParser :: [i] -> Either [Error i] (a, [i])
@@ -54,3 +55,13 @@ satisfy predicate = Parser $ \case
 
 match :: Eq i => i -> Parser i i
 match i = satisfy (== i)
+
+match' :: Eq i => [i] -> Parser i [i]
+match' [] = return empty
+match' [x] = do
+  first <- match x
+  return [first]
+match' (x : xs) = do
+  first <- match x
+  rest <- match' xs
+  return (first : rest)
