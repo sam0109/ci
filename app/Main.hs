@@ -3,12 +3,13 @@ module Main where
 import Lexer
 import Parser
 import ParserBase
-import Ast
 
 main :: IO ()
-main = print $ case lexString "print \"Hello, world!\";" of
+main = print $ case lexString "print 5 * 6;" of
    Left ers -> show ers
-   Right toks -> renderAst $ runParser program toks
+   Right toks -> case runParser program toks of
+     Left ers -> show ers
+     Right ast -> show ast
 
 -- runProgram :: String -> IO ()
 -- runProgram s = case runParser program (lexInput s) >>= evaluate . fst of

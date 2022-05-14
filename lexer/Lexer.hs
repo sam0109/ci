@@ -7,17 +7,17 @@ import ParserBase
 import Token
 import Error
 
-stringToken :: Parser Char Token
+stringToken :: Parser [Char] Token
 stringToken = do
   _ <- match '"'
   text <- many (satisfy (/= '"'))
   _ <- match '"'
   return $ StringToken text
 
-identifierToken :: Parser Char Token
+identifierToken :: Parser [Char] Token
 identifierToken = IdentifierToken <$> some (satisfy isAlpha)
 
-numberToken :: Parser Char Token
+numberToken :: Parser [Char] Token
 numberToken =
   do
     preDotVal <- some $ satisfy isNumber
@@ -26,7 +26,7 @@ numberToken =
     return $ NumberToken (read (preDotVal ++ "." ++ postDotVal))
     <|> NumberToken . read <$> some (satisfy isNumber)
 
-reservedToken :: Parser Char Token
+reservedToken :: Parser [Char] Token
 reservedToken =
   some (satisfy isSpace) $> ReservedToken WHITESPACE
     <|> match' "and" $> ReservedToken AND
@@ -71,7 +71,7 @@ stripWhitespace (ReservedToken WHITESPACE:xs) = stripWhitespace xs
 stripWhitespace (x:xs) = x : stripWhitespace xs
 
 
-lexString :: String -> Either [Error Char] [Token]
+lexString :: String -> Either [Error [Char]] [Token]
 lexString s = case
     runParser
       (some $ reservedToken <|> numberToken <|> identifierToken
@@ -80,4 +80,4 @@ lexString s = case
   of
   Left ers -> Left ers
   Right (result, []) -> Right $ stripWhitespace result
-  Right (_, x:_) -> Left [UnparsedData x]
+  Right (_, x) -> Left [UnparsedData x]

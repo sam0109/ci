@@ -37,6 +37,7 @@ data ReservedTokenType
   | TRUE
   | FALSE
   | WHITESPACE
+  | EOF
   deriving (Show, Enum, Eq, Ord, Bounded)
 
 data Token

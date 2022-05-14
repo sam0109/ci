@@ -8,7 +8,7 @@ import Data.List
 import Error
 
 newtype Parser i a = Parser
-  { runParser :: [i] -> Either [Error i] (a, [i])
+  { runParser :: i -> Either [Error i] (a, i)
   }
 
 instance Functor (Parser i) where
@@ -46,17 +46,17 @@ instance (Eq i) => MonadPlus (Parser i) where
   mzero = empty
   mplus = (<|>)
 
-satisfy :: (i -> Bool) -> Parser i i
+satisfy :: (i -> Bool) -> Parser [i] i
 satisfy predicate = Parser $ \case
   [] -> Left [EndOfInput]
   hd : rest
     | predicate hd -> Right (hd, rest)
-    | otherwise -> Left [Unexpected hd]
+    | otherwise -> Left [Unexpected [hd]]
 
-match :: Eq i => i -> Parser i i
+match :: Eq i => i -> Parser [i] i
 match i = satisfy (== i)
 
-match' :: Eq i => [i] -> Parser i [i]
+match' :: Eq i => [i] -> Parser [i] [i]
 match' [] = return empty
 match' [x] = do
   first <- match x

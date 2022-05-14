@@ -8,10 +8,28 @@ renderAst x = case x of
   Left err -> show err
   Right (ast, _) -> show ast
 
+data UnaryOpType
+  = NEGATIVE
+  | NOT
+  deriving (Show, Enum, Eq)
+
+data BinaryOpType
+  = COMP_NOT_EQ
+  | COMP_EQ
+  | COMP_EQ_OR_GT
+  | COMP_GT
+  | COMP_EQ_OR_LT
+  | COMP_LT
+  | SUB
+  | ADD
+  | DIV
+  | MULT
+  deriving (Show, Enum, Eq)
+
 data Expr
   = Terminal Token
-  | Unary Token Expr
-  | Binary Token Expr Expr
+  | Unary UnaryOpType Expr
+  | Binary BinaryOpType Expr Expr
   | Grouping Expr
   deriving (Show)
 
