@@ -4,12 +4,22 @@ import Lexer
 import Parser
 import ParserBase
 
+import Interpreter
+import State
+
 main :: IO ()
-main = print $ case lexString "print 5 * 6;" of
-   Left ers -> show ers
-   Right toks -> case runParser program toks of
-     Left ers -> show ers
-     Right ast -> show ast
+main = case lexString "var a = 5; print a;" of
+   Left ers -> print ers
+   Right toks -> do
+      putStr $ "\n\n\nLexer output: \n  " ++ show toks ++ "\n"
+      case runParser program toks of
+        Left ers -> print ers
+        Right (programAst, []) -> do
+            putStr $ "Parser output: \n  " ++ show programAst ++ "\n"
+            case evalProgram programAst of
+              Left ers -> print ers
+              Right (State ioResult _) -> putStr "Interpreter output: \n  " >> ioResult
+        Right (_, xs) -> print ("Unconsumed tokens: " ++ show xs)
 
 -- runProgram :: String -> IO ()
 -- runProgram s = case runParser program (lexInput s) >>= evaluate . fst of

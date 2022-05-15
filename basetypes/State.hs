@@ -7,7 +7,19 @@ data Value
   | Text String
   | Boolean Bool
   | Nil
-  deriving (Eq)
+  deriving (Eq, Ord)
+
+extractNumber :: Value -> Either [Error Value] Float
+extractNumber (Number n) = Right n
+extractNumber v = Left [Unexpected v]
+
+extractText :: Value -> Either [Error Value] String
+extractText (Text t) = Right t
+extractText v = Left [Unexpected v]
+
+extractBoolean :: Value -> Either [Error Value] Bool
+extractBoolean (Boolean b) = Right b
+extractBoolean v = Left [Unexpected v]
 
 instance Show Value where
   show Nil = "Nil"
@@ -26,7 +38,7 @@ data State = State
   }
 
 performIO :: State -> IO () -> State
-performIO s i = State (i >> io s) (vars s)
+performIO s i = State (io s >> i) (vars s)
 
 createVar :: State -> Var -> State
 createVar s v = State (io s) (v : vars s)
@@ -37,6 +49,11 @@ findVar (State i (x : xs)) str =
   if identifier x == str
     then Just x
     else findVar (State i xs) str
+
+getVar :: State -> String -> Either [Error Value] Value
+getVar s name = case findVar s name of
+  Nothing -> Left [Undeclared (Text name)]
+  Just var -> Right $ val var
 
 removeVar :: [Var] -> String -> [Var]
 removeVar [] _ = []
@@ -50,7 +67,7 @@ setVar s v = case findVar s (identifier v) of
   Nothing -> State (io s) (v : vars s)
   Just _ -> State (io s) (v : removeVar (vars s) (identifier v))
 
-declVar :: State -> String -> Either [Error String] State
-declVar s ident = case findVar s ident of
-  Nothing -> Right $ State (io s) (Var ident Nil : vars s)
-  Just _ -> Left [VariableAlreadyDeclared ident]
+declVar :: State -> String -> Value -> Either [Error Value] State
+declVar s name value = case findVar s name of
+  Nothing -> Right $ State (io s) (Var name value : vars s)
+  Just _ -> Left [VariableAlreadyDeclared (Text name)]

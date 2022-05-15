@@ -53,6 +53,9 @@ satisfy predicate = Parser $ \case
     | predicate hd -> Right (hd, rest)
     | otherwise -> Left [Unexpected [hd]]
 
+satisfy' :: (Eq i) => [i -> Bool] -> Parser [i] i
+satisfy' = foldr ((<|>) . satisfy) empty
+
 match :: Eq i => i -> Parser [i] i
 match i = satisfy (== i)
 

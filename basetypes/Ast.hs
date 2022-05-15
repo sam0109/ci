@@ -35,7 +35,7 @@ data Expr
 
 data Stmt
   = ExprStmt Expr
-  | PrintStmt Token Expr
+  | PrintStmt Expr
   deriving (Show)
 
 data Decl

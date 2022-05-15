@@ -21,8 +21,8 @@ matchRes' :: [ReservedTokenType] -> Parser [Token] Token
 matchRes' = foldr ((<|>) . matchRes) empty
 
 binaryOpType :: Token -> Parser [Token] BinaryOpType
-binaryOpType (ReservedToken BANG_EQUAL) = pure COMP_NOT_EQ 
-binaryOpType (ReservedToken EQUAL_EQUAL) = pure COMP_EQ 
+binaryOpType (ReservedToken BANG_EQUAL) = pure COMP_NOT_EQ
+binaryOpType (ReservedToken EQUAL_EQUAL) = pure COMP_EQ
 binaryOpType (ReservedToken GREATER_EQUAL) = pure COMP_EQ_OR_GT
 binaryOpType (ReservedToken GREATER) = pure COMP_GT
 binaryOpType (ReservedToken LESS_EQUAL) = pure COMP_EQ_OR_LT
@@ -34,8 +34,8 @@ binaryOpType (ReservedToken STAR) = pure MULT
 binaryOpType x = Parser $ \_ -> Left [Unexpected [x]]
 
 unaryOpType :: Token -> Parser [Token] UnaryOpType
-unaryOpType (ReservedToken MINUS) = pure NEGATIVE 
-unaryOpType (ReservedToken BANG) = pure NOT 
+unaryOpType (ReservedToken MINUS) = pure NEGATIVE
+unaryOpType (ReservedToken BANG) = pure NOT
 unaryOpType x = Parser $ \_ -> Left [Unexpected [x]]
 
 binaryOp :: [ReservedTokenType] -> Parser [Token] Expr -> Parser [Token] Expr
@@ -81,23 +81,27 @@ unary = unaryOp [BANG, MINUS] primary
 
 primary :: Parser [Token] Expr
 primary =
-  Terminal <$> (satisfy isNumberToken <|> satisfy isStringToken <|> matchRes' [TRUE, NIL])
+  Terminal <$> (satisfy' [isNumberToken, isStringToken, isIdToken] <|> matchRes' [TRUE, NIL])
     <|> grouping
 
 grouping :: Parser [Token] Expr
 grouping = Grouping <$> (matchRes LEFT_PAREN *> expression <* matchRes RIGHT_PAREN)
 
 statement :: Parser [Token] Stmt
-statement = (ExprStmt <$> expression <|> PrintStmt <$> matchRes PRINT <*> expression) <* matchRes SEMICOLON
+statement = ExprStmt <$> expression <|> PrintStmt <$> (matchRes PRINT *> expression)
 
 declaration :: Parser [Token] Decl
 declaration =
-  StmtDecl <$> statement
-    <|> do
-      s <- matchRes VAR *> stringFromIdToken <* matchRes EQUAL
-      expr <- expression
-      return $ VarDecl (Just expr) s
-    <|> VarDecl Nothing <$> (matchRes VAR *> stringFromIdToken)
+  ( StmtDecl
+      <$> statement
+      <|> do
+        s <- matchRes VAR *> stringFromIdToken <* matchRes EQUAL
+        expr <- expression
+        return $ VarDecl (Just expr) s
+      <|> VarDecl Nothing
+      <$> (matchRes VAR *> stringFromIdToken)
+  )
+    <* matchRes SEMICOLON
 
 program :: Parser [Token] Program
 program = Program <$> some declaration
