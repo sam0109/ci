@@ -54,15 +54,23 @@ unaryOp tt p =
     <|> p
 
 -- expression -> equality;
+-- assignment -> IDENTIFIER "=" assignment | equality ;
 -- equality   -> (equality ( "!=" | "==" ) comparison) | comparison ;
 -- comparison -> comparison ( ">" | ">=" | "<" | "<=" ) term | term ;
 -- term       -> term ( "-" | "+" ) factor | factor;
 -- factor     -> factor ( "/" | "*" ) unary | unary ;
 -- unary      -> ( ( "!" | "-" ) unary ) | primary ;
--- primary    -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
+-- primary    -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER ;
 
 expression :: Parser [Token] Expr
-expression = equality
+expression = assignment
+
+assignment :: Parser [Token] Expr
+assignment = do
+  str <- stringFromIdToken
+  _ <- matchRes EQUAL
+  Assign str <$> assignment
+  <|> equality
 
 equality :: Parser [Token] Expr
 equality = binaryOp [BANG_EQUAL, EQUAL_EQUAL] comparison

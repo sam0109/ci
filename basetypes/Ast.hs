@@ -30,6 +30,7 @@ data Expr
   = Terminal Token
   | Unary UnaryOpType Expr
   | Binary BinaryOpType Expr Expr
+  | Assign String Expr
   | Grouping Expr
   deriving (Show)
 
