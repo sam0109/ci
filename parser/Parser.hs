@@ -39,26 +39,27 @@ unaryOpType (ReservedToken BANG) = pure NOT
 unaryOpType x = Parser $ \_ -> Left [Unexpected [x]]
 
 binaryOp :: [ReservedTokenType] -> Parser [Token] Expr -> Parser [Token] Expr
-binaryOp tt p =
+binaryOp tokenType p =
   do
     left <- p
-    op <- matchRes' tt >>= binaryOpType
-    Binary op left <$> p
+    op <- matchRes' tokenType >>= binaryOpType
+    right <- binaryOp tokenType p
+    return $ Binary op left right
     <|> p
 
 unaryOp :: [ReservedTokenType] -> Parser [Token] Expr -> Parser [Token] Expr
-unaryOp tt p =
+unaryOp tokenType p =
   do
-    op <- matchRes' tt >>= unaryOpType
+    op <- matchRes' tokenType >>= unaryOpType
     Unary op <$> p
     <|> p
 
 -- expression -> equality;
 -- assignment -> IDENTIFIER "=" assignment | equality ;
--- equality   -> (equality ( "!=" | "==" ) comparison) | comparison ;
--- comparison -> comparison ( ">" | ">=" | "<" | "<=" ) term | term ;
--- term       -> term ( "-" | "+" ) factor | factor;
--- factor     -> factor ( "/" | "*" ) unary | unary ;
+-- equality   -> comparison ( ( "!=" | "==" ) comparison )*;
+-- comparison -> term  ( ( ">" | ">=" | "<" | "<=" ) term )*;
+-- term       -> factor ( ( "-" | "+" ) factor )*;
+-- factor     -> unary ( ( "/" | "*" ) unary )*;
 -- unary      -> ( ( "!" | "-" ) unary ) | primary ;
 -- primary    -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER ;
 
