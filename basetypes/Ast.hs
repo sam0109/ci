@@ -32,17 +32,17 @@ data Expr
   | Binary BinaryOpType Expr Expr
   | Assign String Expr
   | Grouping Expr
-  deriving (Show)
+  deriving (Show, Eq)
 
 data Stmt
   = ExprStmt Expr
   | PrintStmt Expr
-  deriving (Show)
+  deriving (Show, Eq)
 
 data Decl
   = VarDecl (Maybe Expr) String
   | StmtDecl Stmt
-  deriving (Show)
+  deriving (Show, Eq)
 
 data Program = Program [Decl]
-  deriving (Show)
+  deriving (Show, Eq)

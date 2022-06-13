@@ -3,12 +3,11 @@ module Main where
 import Lexer
 import Parser
 import ParserBase
-
 import Interpreter
 import State
 
 main :: IO ()
-main = case lexString "var a = 5; a = 10; print a;" of
+main = case lexString "var a = 5 + 5 + 5; print a;" of
    Left ers -> print ers
    Right toks -> do
       putStr $ "\n\n\nLexer output: \n  " ++ show toks ++ "\n"
