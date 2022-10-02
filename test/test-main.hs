@@ -6,6 +6,7 @@ import ParserBase
 import Test.Hspec
 import Token
 import Data.Either
+import Interpreter
 
 main :: IO ()
 main = hspec $ do
@@ -25,3 +26,15 @@ main = hspec $ do
         runParser program [ReservedToken VAR, IdentifierToken "a", ReservedToken EQUAL, NumberToken 5.0, ReservedToken SEMICOLON] `shouldBe` Right (Program [VarDecl (Just (Terminal (NumberToken 5.0))) "a"],[])
     it "succeeds at parsing three additions" $ do
         runParser program [NumberToken 5.0, ReservedToken PLUS, NumberToken 5.0, ReservedToken PLUS, NumberToken 5.0, ReservedToken SEMICOLON] `shouldSatisfy` isRight
+    it "allows reassignment of variables" $ do
+        runParser program [ReservedToken VAR, IdentifierToken "a", ReservedToken EQUAL, NumberToken 5.0, ReservedToken SEMICOLON, ReservedToken VAR, IdentifierToken "a", ReservedToken EQUAL, NumberToken 5.0, ReservedToken SEMICOLON] `shouldSatisfy` isRight
+  describe "interpreter" $ do
+    context "when given a valid AST" $ do
+      it "evaluates it" $ do
+        evalProgram (Program [VarDecl (Just (Terminal (NumberToken 5.0))) "a"]) `shouldSatisfy` isRight
+    context "when given an AST containing a reassignment" $ do
+      it "evaluates it" $ do
+        evalProgram (Program [VarDecl (Just (Terminal (NumberToken 5.0))) "a", VarDecl (Just (Terminal (NumberToken 5.0))) "a"]) `shouldSatisfy` isRight
+    context "when given an AST that uses a variable before assigning it" $ do
+      it "fails" $ do
+        evalProgram (Program [StmtDecl (PrintStmt (Terminal (IdentifierToken "a"))), VarDecl (Just (Terminal (NumberToken 5.0))) "a"]) `shouldSatisfy` isLeft

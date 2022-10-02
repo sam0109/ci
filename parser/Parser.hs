@@ -14,6 +14,12 @@ stringFromIdToken = Parser $ \case
   ((IdentifierToken s) : rest) -> Right (s, rest)
   x -> Left [Unexpected x]
 
+stringFromIdExpr :: Parser [Expr] Token
+stringFromIdExpr = Parser $ \case
+  [] -> Left [EndOfInput]
+  ((Terminal tok) : rest) -> Right (tok, rest)
+  x -> Left [Unexpected x]
+
 matchRes :: ReservedTokenType -> Parser [Token] Token
 matchRes tt = satisfy $ isReservedTokenOfType tt
 
@@ -68,7 +74,7 @@ expression = assignment
 
 assignment :: Parser [Token] Expr
 assignment = do
-  str <- stringFromIdToken
+  str <- stringFromIdExpr <=> equality
   _ <- matchRes EQUAL
   Assign str <$> assignment
   <|> equality

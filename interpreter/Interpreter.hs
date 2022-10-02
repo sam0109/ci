@@ -44,8 +44,8 @@ evalStmt s (PrintStmt a) = evalExpr s a >>= (Right . performIO s . print . fst)
 
 evalDecl :: State -> Decl -> Either [Error Value] State
 evalDecl s (StmtDecl stmt) = evalStmt s stmt
-evalDecl s (VarDecl Nothing name) = declVar s name Nil
-evalDecl s (VarDecl (Just expr) name) = evalExpr s expr >>= declVar s name . fst
+evalDecl s (VarDecl Nothing name) = Right $ setVar s (Var name Nil)
+evalDecl s (VarDecl (Just expr) name) = setVar s . Var name . fst <$> evalExpr s expr 
 
 evalProgram' :: State -> Program -> Either [Error Value] State
 evalProgram' s (Program []) = Right s

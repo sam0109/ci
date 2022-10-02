@@ -32,10 +32,15 @@ data Var = Var
     val :: Value
   }
 
+instance Show Var where
+  show v = show (identifier v) ++ ": " ++ show (val v)
+
 data State = State
   { io :: IO (),
     vars :: [Var]
   }
+instance Show State where
+  show v = show (vars v)
 
 performIO :: State -> IO () -> State
 performIO s i = State (io s >> i) (vars s)
@@ -66,8 +71,3 @@ setVar :: State -> Var -> State
 setVar s v = case findVar s (identifier v) of
   Nothing -> State (io s) (v : vars s)
   Just _ -> State (io s) (v : removeVar (vars s) (identifier v))
-
-declVar :: State -> String -> Value -> Either [Error Value] State
-declVar s name value = case findVar s name of
-  Nothing -> Right $ State (io s) (Var name value : vars s)
-  Just _ -> Left [VariableAlreadyDeclared (Text name)]
